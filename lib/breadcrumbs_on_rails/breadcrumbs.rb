@@ -99,6 +99,34 @@ module BreadcrumbsOnRails
 
     end
 
+    class NamespacedBuilder < Builder
+      def render
+        @elements.collect do |namespace, breadcrumbs|
+          list = breadcrumbs.collect do |element|
+            render_element(element)
+          end.join(@options[:separator] || " &raquo; ")
+          render_list list
+        end.join('<br/>'.html_safe)
+      end
+
+      def render_list(elements)
+        @context.content_tag :ul, elements.html_safe, class: 'breadcrumbs__list'
+      end
+
+      def render_element(element)
+        if element.path == nil
+          content = compute_name(element)
+        else
+          content = @context.link_to_unless_current(compute_name(element), compute_path(element), element.options)
+        end
+        if @options[:tag]
+          @context.content_tag(@options[:tag], content)
+        else
+          ERB::Util.h(content)
+        end
+      end
+    end
+
 
     # Represents a navigation element in the breadcrumb collection.
     #

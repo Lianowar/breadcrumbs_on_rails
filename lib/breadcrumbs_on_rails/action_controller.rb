@@ -14,7 +14,7 @@ module BreadcrumbsOnRails
     included do |base|
       extend          ClassMethods
       helper          HelperMethods
-      helper_method   :add_breadcrumb, :breadcrumbs
+      helper_method   :add_breadcrumb, :breadcrumbs, :add_namespaced_breadcrumb, :namespaced_breadcrumbs
 
       unless base.respond_to?(:before_action)
         base.alias_method :before_action, :before_filter
@@ -27,8 +27,17 @@ module BreadcrumbsOnRails
       self.breadcrumbs << Breadcrumbs::Element.new(name, path, options)
     end
 
+    def add_namespaced_breadcrumb(namespace, name, path = nil, options = {})
+      self.namespaced_breadcrumbs[namespace] ||= []
+      self.namespaced_breadcrumbs[namespace] << Breadcrumbs::Element.new(name, path, options)
+    end
+
     def breadcrumbs
       @breadcrumbs ||= []
+    end
+
+    def namespaced_breadcrumbs
+      @namespaced_breadcrumbs ||= {}
     end
 
     module Utils
@@ -84,6 +93,16 @@ module BreadcrumbsOnRails
 
       def render_breadcrumbs(options = {}, &block)
         builder = (options.delete(:builder) || Breadcrumbs::SimpleBuilder).new(self, breadcrumbs, options)
+        content = builder.render.html_safe
+        if block_given?
+          capture(content, &block)
+        else
+          content
+        end
+      end
+
+      def render_namespaced_breadcrumbs(options = {}, &block)
+        builder = (options.delete(:builder) || Breadcrumbs::NamespacedBuilder).new(self, namespaced_breadcrumbs, options)
         content = builder.render.html_safe
         if block_given?
           capture(content, &block)
